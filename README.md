@@ -1,40 +1,70 @@
 # Esports Tournament API
 
-A clean and scalable FastAPI backend foundation for an **Esports Tournament Management System**. This project is designed to manage tournaments, teams, players, and matches while following a modular project architecture.
+A FastAPI backend for managing esports tournaments, teams, players, and matches.
 
 ---
 
-# Technologies
+# Stack
 
 - Python 3.13+
 - FastAPI
-- SQLAlchemy 2.0 ORM
+- SQLAlchemy 2.0
 - PostgreSQL
+- Pydantic v2
 - Uvicorn
-- uv (package and dependency manager)
+- pytest
 
 ---
 
 # Project Structure
 
-```text
+```
 esports-tournament-api/
 ├── app/
+│   ├── __init__.py
+│   ├── main.py                       # App entry point, exception handlers
 │   ├── core/
-│   │   ├── config.py
-│   │   ├── database.py
-│   │   └── __init__.py
-│   │
-│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── config.py                 # Environment config
+│   │   └── database.py               # Engine, session factory
+│   ├── models/                       # SQLAlchemy ORM models
+│   │   ├── tournament.py
+│   │   ├── team.py
+│   │   ├── player.py
+│   │   └── match.py
+│   ├── schemas/                      # Pydantic DTOs
 │   │   ├── tournament.py
 │   │   ├── team.py
 │   │   ├── player.py
 │   │   ├── match.py
+│   │   └── pagination.py
+│   ├── repositories/                 # Data access layer
+│   │   ├── tournament_repository.py
+│   │   ├── team_repository.py
+│   │   ├── player_repository.py
+│   │   └── match_repository.py
+│   ├── services/                     # Business logic
+│   │   ├── tournament_service.py
+│   │   ├── team_service.py
+│   │   ├── player_service.py
+│   │   └── match_service.py
+│   ├── controllers/                  # FastAPI routers
+│   │   ├── tournament.py
+│   │   ├── team.py
+│   │   ├── player.py
+│   │   └── match.py
+│   ├── exceptions/                   # Custom exception classes
 │   │   └── __init__.py
-│   │
-│   ├── main.py
-│   └── __init__.py
-│
+│   └── dependencies/                 # FastAPI dependencies
+│       └── database.py
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   └── services/
+│       ├── test_tournament_service.py
+│       ├── test_team_service.py
+│       ├── test_player_service.py
+│       └── test_match_service.py
 ├── pyproject.toml
 ├── uv.lock
 ├── README.md
@@ -44,195 +74,102 @@ esports-tournament-api/
 
 ---
 
-# Architecture
+# Flow
 
-The project follows a simple layered architecture.
+Every request follows the same path:
 
-- **app/models** – SQLAlchemy ORM entity models
-- **app/core** – Database configuration and application settings
-- **app/main.py** – FastAPI application entry point
-
-This structure keeps the project organized and scalable for future development.
-
-## Layered Architecture Overview
-
-```text
-HTTP Request
-   ↓
-Controller (FastAPI router)
-   ↓
-Service (business logic)
-   ↓
-Repository (database access)
-   ↓
-SQLAlchemy Model
-   ↓
+```
+Client
+  ↓
+Controller (receives request, returns response)
+  ↓
+Service  (validates business rules)
+  ↓
+Repository (runs SQL queries)
+  ↓
 Database
 ```
 
-**Why use DTOs (Pydantic schemas)?**
-- **Decoupling:** DTOs separate the public API contract from internal ORM models, protecting the API from accidental exposure of database implementation details.
-- **Validation & Documentation:** Pydantic schemas provide request validation and automatically generate OpenAPI documentation, ensuring clients receive well‑defined data structures.
-- **Versioning & Flexibility:** Changes to the database schema (e.g., adding columns) do not automatically affect the API response; DTOs can evolve independently.
-- **Security:** Sensitive fields (e.g., internal IDs, timestamps) can be omitted from responses, reducing surface area for leaks.
-- **Consistency:** All responses are consistently shaped, making client integration predictable.
-
-The codebase now follows this exact flow for each entity, with one example endpoint (e.g., `POST /teams`) demonstrating the layered approach.
+Data flows back the same way in reverse, with ORM objects converted to Pydantic DTOs before reaching the client.
 
 ---
 
-# Entity Relationship Diagram
+# API Endpoints
 
-```text
-Tournament
------------
-id (PK)
-name
-game
-location
-prize_pool
-start_date
-end_date
-status
+All entities have the same CRUD endpoints.
 
-        1
-        │
-        │
-        *
-Match
------------
-id (PK)
-tournament_id (FK)
-team1_id (FK)
-team2_id (FK)
-winner_id (FK)
-scheduled_at
-status
-score_team1
-score_team2
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/{entity}/` | Create |
+| GET | `/{entity}/` | List (paginated, sortable) |
+| GET | `/{entity}/{id}` | Get by ID |
+| PUT | `/{entity}/{id}` | Update |
+| DELETE | `/{entity}/{id}` | Delete |
 
+Entities: `tournaments`, `teams`, `players`, `matches`.
 
-Team
------------
-id (PK)
-name
-tag
-country
-founded_year
-logo_url
+### Pagination & Sorting
 
-        1
-        │
-        │
-        *
-Player
------------
-id (PK)
-nickname
-real_name
-country
-age
-role
-team_id (FK)
+List endpoints support pagination and sorting via query parameters.
+
+```
+GET /teams?page=1&size=10&sort_by=name&order=asc
 ```
 
-### Relationships
-
-- One Tournament has many Matches.
-- One Team has many Players.
-- One Team can participate in many Matches.
-- Each Match belongs to one Tournament.
-- Each Player belongs to one Team.
+Defaults are page=1, size=10, order=asc. Max size is 100. Passing an invalid sort column returns a 400 error.
 
 ---
 
-# Entity Description
+# Relationships
 
-## Tournament
+- A Tournament has many Matches
+- A Team has many Players
+- A Team can appear in many Matches (as team1 or team2)
+- A Match belongs to one Tournament and involves two Teams
 
-Represents an esports tournament. Stores tournament information including game title, location, prize pool, schedule, and current status.
+---
 
-## Team
+# Error Handling
 
-Represents an esports team. Stores team information such as name, tag, country, founding year, and logo.
+Errors come back in a consistent format:
 
-## Player
+```json
+{
+  "success": false,
+  "message": "What went wrong",
+  "details": null
+}
+```
 
-Represents an individual player belonging to a specific team.
-
-## Match
-
-Represents a scheduled match between two teams inside a tournament, including scores, winner, and match status.
+HTTP status codes used:
+- 400 – validation errors, invalid sort columns
+- 404 – resource not found
+- 409 – duplicate entry (team tag, player nickname)
+- 422 – request body validation
+- 500 – unexpected errors
 
 ---
 
 # Running the Project
 
-## 1. Create a virtual environment
+1. Copy `.env.example` to `.env` and set your PostgreSQL connection string.
+2. Create a virtual environment: `uv venv`
+3. Activate it (`.venv\Scripts\activate` on Windows, `source .venv/bin/activate` otherwise).
+4. Install deps: `uv sync`
+5. Start the server: `uvicorn app.main:app --reload`
+
+The API will be at `http://localhost:8000`. OpenAPI docs at `/docs`.
+
+### Tests
 
 ```bash
-uv venv
+pytest tests/
 ```
 
-## 2. Activate the virtual environment
-
-### Windows
-
-```powershell
-.venv\Scripts\activate
-```
-
-### Linux / macOS
-
-```bash
-source .venv/bin/activate
-```
-
-## 3. Install dependencies
-
-```bash
-uv sync
-```
-
-## 4. Configure environment variables
-
-Copy:
-
-```text
-.env.example
-```
-
-to
-
-```text
-.env
-```
-
-and configure your PostgreSQL connection string.
-
-## 5. Start the server
-
-```bash
-uvicorn app.main:app --reload
-```
-
-## 6. Open the API
-
-```
-GET /
-```
-
-Expected response:
-
-```json
-{
-  "message": "Esports Tournament API"
-}
-```
+Tests mock the repository layer so they don't need a real database.
 
 ---
 
-
 # License
 
-This project was created for educational purposes.
+Educational project.
