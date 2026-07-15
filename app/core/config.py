@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def get_database_url() -> str:
     """Return the database URL from the environment."""
