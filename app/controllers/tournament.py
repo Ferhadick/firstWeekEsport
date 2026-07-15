@@ -1,8 +1,9 @@
 """Tournament controller (FastAPI router) handling HTTP requests for Tournament entity."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.tournament import TournamentCreate, TournamentRead, TournamentUpdate
 from app.services.tournament_service import (
     create_tournament as service_create_tournament,
@@ -26,9 +27,15 @@ def get_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
     return service_get_tournament(db, tournament_id)
 
 
-@router.get("/", response_model=list[TournamentRead])
-def list_tournaments_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return service_get_all_tournaments(db, skip=skip, limit=limit)
+@router.get("/", response_model=PaginatedResponse[TournamentRead])
+def list_tournaments_endpoint(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    sort_by: str | None = Query(None),
+    order: str | None = Query("asc"),
+    db: Session = Depends(get_db),
+):
+    return service_get_all_tournaments(db, page=page, size=size, sort_by=sort_by, order=order)
 
 
 @router.put("/{tournament_id}", response_model=TournamentRead)

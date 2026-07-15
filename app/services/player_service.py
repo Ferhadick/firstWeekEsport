@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.exceptions import AlreadyExistsException, NotFoundException
+from app.exceptions import AlreadyExistsException, BusinessValidationException, NotFoundException
+from app.schemas.pagination import PaginatedResponse, validate_sort_params
 from app.schemas.player import PlayerCreate, PlayerRead, PlayerUpdate
 from app.repositories.player_repository import (
     get_player as repo_get_player,
@@ -15,6 +16,10 @@ from app.repositories.player_repository import (
     get_player_by_nickname as repo_get_player_by_nickname,
 )
 
+VALID_SORT_COLUMNS = {
+    "id", "nickname", "real_name", "country", "age", "role", "team_id",
+}
+
 
 def get_player_by_id(db: Session, player_id: int) -> PlayerRead:
     player = repo_get_player(db, player_id)
@@ -23,9 +28,32 @@ def get_player_by_id(db: Session, player_id: int) -> PlayerRead:
     return PlayerRead.model_validate(player)
 
 
-def get_all_players(db: Session, skip: int = 0, limit: int = 100) -> list[PlayerRead]:
-    players = repo_get_players(db, skip=skip, limit=limit)
-    return [PlayerRead.model_validate(p) for p in players]
+def get_all_players(
+    db: Session,
+    *,
+    page: int = 1,
+    size: int = 10,
+    sort_by: str | None = None,
+    order: str | None = None,
+) -> PaginatedResponse[PlayerRead]:
+    if page < 1:
+        raise BusinessValidationException("Page must be 1 or greater")
+    if size < 1 or size > 100:
+        raise BusinessValidationException("Size must be between 1 and 100")
+    sort_by_normalized = sort_by.lower() if sort_by else None
+    order_normalized = order.lower() if order else None
+    validate_sort_params(sort_by_normalized, order_normalized, VALID_SORT_COLUMNS)
+    players, total = repo_get_players(
+        db, page=page, size=size, sort_by=sort_by_normalized, order=order_normalized,
+    )
+    pages = (total + size - 1) // size if total else 0
+    return PaginatedResponse(
+        items=[PlayerRead.model_validate(p) for p in players],
+        page=page,
+        size=size,
+        total=total,
+        pages=pages,
+    )
 
 
 def create_player(db: Session, player_in: PlayerCreate) -> PlayerRead:

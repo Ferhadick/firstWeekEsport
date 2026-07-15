@@ -1,8 +1,9 @@
 """Team controller (FastAPI router) handling HTTP requests for Team entity."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.team import TeamCreate, TeamRead, TeamUpdate
 from app.services.team_service import (
     create_team as service_create_team,
@@ -24,9 +25,15 @@ def create_team_endpoint(team: TeamCreate, db: Session = Depends(get_db)):
 def get_team_endpoint(team_id: int, db: Session = Depends(get_db)):
     return service_get_team(db, team_id)
 
-@router.get("/", response_model=list[TeamRead])
-def list_teams_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return service_get_all_teams(db, skip=skip, limit=limit)
+@router.get("/", response_model=PaginatedResponse[TeamRead])
+def list_teams_endpoint(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    sort_by: str | None = Query(None),
+    order: str | None = Query("asc"),
+    db: Session = Depends(get_db),
+):
+    return service_get_all_teams(db, page=page, size=size, sort_by=sort_by, order=order)
 
 @router.put("/{team_id}", response_model=TeamRead)
 def update_team_endpoint(team_id: int, team_update: TeamUpdate, db: Session = Depends(get_db)):

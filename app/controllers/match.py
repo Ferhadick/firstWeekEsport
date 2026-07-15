@@ -1,9 +1,10 @@
 """Match controller (FastAPI router) handling HTTP requests for Match entity."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.schemas.match import MatchCreate, MatchRead, MatchUpdate
+from app.schemas.pagination import PaginatedResponse
 from app.services.match_service import (
     create_match as service_create_match,
     get_match_by_id as service_get_match,
@@ -26,9 +27,15 @@ def get_match_endpoint(match_id: int, db: Session = Depends(get_db)):
     return service_get_match(db, match_id)
 
 
-@router.get("/", response_model=list[MatchRead])
-def list_matches_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return service_get_all_matches(db, skip=skip, limit=limit)
+@router.get("/", response_model=PaginatedResponse[MatchRead])
+def list_matches_endpoint(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    sort_by: str | None = Query(None),
+    order: str | None = Query("asc"),
+    db: Session = Depends(get_db),
+):
+    return service_get_all_matches(db, page=page, size=size, sort_by=sort_by, order=order)
 
 
 @router.put("/{match_id}", response_model=MatchRead)

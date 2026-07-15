@@ -1,8 +1,9 @@
 """Player controller (FastAPI router) handling HTTP requests for Player entity."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.player import PlayerCreate, PlayerRead, PlayerUpdate
 from app.services.player_service import (
     create_player as service_create_player,
@@ -26,9 +27,15 @@ def get_player_endpoint(player_id: int, db: Session = Depends(get_db)):
     return service_get_player(db, player_id)
 
 
-@router.get("/", response_model=list[PlayerRead])
-def list_players_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return service_get_all_players(db, skip=skip, limit=limit)
+@router.get("/", response_model=PaginatedResponse[PlayerRead])
+def list_players_endpoint(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    sort_by: str | None = Query(None),
+    order: str | None = Query("asc"),
+    db: Session = Depends(get_db),
+):
+    return service_get_all_players(db, page=page, size=size, sort_by=sort_by, order=order)
 
 
 @router.put("/{player_id}", response_model=PlayerRead)

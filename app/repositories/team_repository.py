@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
 from app.models.team import Team
@@ -15,8 +16,22 @@ def get_team_by_tag(db: Session, tag: str) -> Team | None:
     return db.query(Team).filter(Team.tag == tag).first()
 
 
-def get_teams(db: Session, skip: int = 0, limit: int = 100) -> list[Team]:
-    return db.query(Team).offset(skip).limit(limit).all()
+def get_teams(
+    db: Session,
+    *,
+    page: int = 1,
+    size: int = 10,
+    sort_by: str | None = None,
+    order: str | None = None,
+) -> tuple[list[Team], int]:
+    query = db.query(Team)
+    if sort_by:
+        sort_column = getattr(Team, sort_by)
+        order_fn = asc if order == "asc" else desc
+        query = query.order_by(order_fn(sort_column))
+    total = query.count()
+    items = query.offset((page - 1) * size).limit(size).all()
+    return items, total
 
 
 def create_team(db: Session, team_data: dict) -> Team:
