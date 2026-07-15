@@ -6,6 +6,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class PlayerBase(BaseModel):
     nickname: str = Field(..., max_length=100)
     real_name: str = Field(..., max_length=255)
@@ -16,8 +17,10 @@ class PlayerBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class PlayerCreate(PlayerBase):
     pass
+
 
 class PlayerUpdate(BaseModel):
     nickname: Optional[str] = None
@@ -29,7 +32,6 @@ class PlayerUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class PlayerRead(PlayerBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

@@ -6,9 +6,6 @@ from fastapi import FastAPI
 
 app = FastAPI(title="Esports Tournament API")
 
-# Dependency for database session
-from app.dependencies.database import get_db
-
 # Include routers
 from app.controllers.team import router as team_router
 from app.controllers.tournament import router as tournament_router

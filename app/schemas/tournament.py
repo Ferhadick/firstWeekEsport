@@ -4,9 +4,18 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class TournamentStatus(str, Enum):
+    scheduled = "scheduled"
+    active = "active"
+    completed = "completed"
+    cancelled = "cancelled"
+
 
 class TournamentBase(BaseModel):
     name: str = Field(..., max_length=255)
@@ -15,12 +24,14 @@ class TournamentBase(BaseModel):
     prize_pool: Decimal = Field(...)
     start_date: date
     end_date: date
-    status: str = Field(...)
+    status: TournamentStatus
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class TournamentCreate(TournamentBase):
     pass
+
 
 class TournamentUpdate(BaseModel):
     name: Optional[str] = None
@@ -29,11 +40,10 @@ class TournamentUpdate(BaseModel):
     prize_pool: Optional[Decimal] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[TournamentStatus] = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class TournamentRead(TournamentBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

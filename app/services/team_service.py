@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlalchemy.orm import Session
 
 from app.schemas.team import TeamCreate, TeamRead, TeamUpdate
@@ -16,29 +14,29 @@ from app.repositories.team_repository import (
 )
 
 
-def get_team_by_id(db: Session, team_id: int) -> Optional[TeamRead]:
+def get_team_by_id(db: Session, team_id: int) -> TeamRead | None:
     team = repo_get_team(db, team_id)
     if team:
-        return TeamRead.from_orm(team)
+        return TeamRead.model_validate(team)
     return None
 
 
-def get_all_teams(db: Session, skip: int = 0, limit: int = 100) -> List[TeamRead]:
+def get_all_teams(db: Session, skip: int = 0, limit: int = 100) -> list[TeamRead]:
     teams = repo_get_teams(db, skip=skip, limit=limit)
-    return [TeamRead.from_orm(team) for team in teams]
+    return [TeamRead.model_validate(team) for team in teams]
 
 
 def create_team(db: Session, team_in: TeamCreate) -> TeamRead:
     team = repo_create_team(db, team_in.model_dump())
-    return TeamRead.from_orm(team)
+    return TeamRead.model_validate(team)
 
 
-def update_team(db: Session, team_id: int, team_update: TeamUpdate) -> Optional[TeamRead]:
+def update_team(db: Session, team_id: int, team_update: TeamUpdate) -> TeamRead | None:
     team = repo_get_team(db, team_id)
     if not team:
         return None
     updated = repo_update_team(db, team, team_update.model_dump(exclude_unset=True))
-    return TeamRead.from_orm(updated)
+    return TeamRead.model_validate(updated)
 
 
 def delete_team(db: Session, team_id: int) -> bool:

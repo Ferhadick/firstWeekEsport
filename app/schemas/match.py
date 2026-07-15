@@ -8,11 +8,13 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class MatchStatus(str, Enum):
     scheduled = "scheduled"
     live = "live"
     completed = "completed"
     cancelled = "cancelled"
+
 
 class MatchBase(BaseModel):
     tournament_id: int
@@ -26,8 +28,10 @@ class MatchBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class MatchCreate(MatchBase):
     pass
+
 
 class MatchUpdate(BaseModel):
     tournament_id: Optional[int] = None
@@ -41,7 +45,6 @@ class MatchUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class MatchRead(MatchBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)

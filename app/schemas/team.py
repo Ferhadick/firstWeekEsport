@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class TeamBase(BaseModel):
     name: str = Field(..., max_length=255)
@@ -16,8 +16,10 @@ class TeamBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class TeamCreate(TeamBase):
     pass
+
 
 class TeamUpdate(BaseModel):
     name: Optional[str] = None
@@ -28,7 +30,6 @@ class TeamUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class TeamRead(TeamBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)
