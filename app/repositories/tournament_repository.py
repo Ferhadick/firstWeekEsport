@@ -11,6 +11,10 @@ def get_tournament(db: Session, tournament_id: int) -> Tournament | None:
     return db.query(Tournament).filter(Tournament.id == tournament_id).first()
 
 
+def get_tournament_by_name(db: Session, name: str) -> Tournament | None:
+    return db.query(Tournament).filter(Tournament.name == name).first()
+
+
 def get_tournaments(db: Session, skip: int = 0, limit: int = 100) -> list[Tournament]:
     return db.query(Tournament).offset(skip).limit(limit).all()
 

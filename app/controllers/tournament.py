@@ -1,6 +1,6 @@
 """Tournament controller (FastAPI router) handling HTTP requests for Tournament entity."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.schemas.tournament import TournamentCreate, TournamentRead, TournamentUpdate
@@ -23,10 +23,7 @@ def create_tournament_endpoint(tournament: TournamentCreate, db: Session = Depen
 
 @router.get("/{tournament_id}", response_model=TournamentRead)
 def get_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
-    tournament = service_get_tournament(db, tournament_id)
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Tournament not found")
-    return tournament
+    return service_get_tournament(db, tournament_id)
 
 
 @router.get("/", response_model=list[TournamentRead])
@@ -36,15 +33,10 @@ def list_tournaments_endpoint(skip: int = 0, limit: int = 100, db: Session = Dep
 
 @router.put("/{tournament_id}", response_model=TournamentRead)
 def update_tournament_endpoint(tournament_id: int, tournament_update: TournamentUpdate, db: Session = Depends(get_db)):
-    updated = service_update_tournament(db, tournament_id, tournament_update)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Tournament not found")
-    return updated
+    return service_update_tournament(db, tournament_id, tournament_update)
 
 
 @router.delete("/{tournament_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
-    success = service_delete_tournament(db, tournament_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Tournament not found")
+    service_delete_tournament(db, tournament_id)
     return None

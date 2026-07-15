@@ -11,6 +11,10 @@ def get_team(db: Session, team_id: int) -> Team | None:
     return db.query(Team).filter(Team.id == team_id).first()
 
 
+def get_team_by_tag(db: Session, tag: str) -> Team | None:
+    return db.query(Team).filter(Team.tag == tag).first()
+
+
 def get_teams(db: Session, skip: int = 0, limit: int = 100) -> list[Team]:
     return db.query(Team).offset(skip).limit(limit).all()
 

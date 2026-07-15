@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.exceptions import NotFoundException
 from app.schemas.match import MatchCreate, MatchRead, MatchUpdate
 from app.repositories.match_repository import (
     get_match as repo_get_match,
@@ -14,11 +15,11 @@ from app.repositories.match_repository import (
 )
 
 
-def get_match_by_id(db: Session, match_id: int) -> MatchRead | None:
+def get_match_by_id(db: Session, match_id: int) -> MatchRead:
     match = repo_get_match(db, match_id)
-    if match:
-        return MatchRead.model_validate(match)
-    return None
+    if not match:
+        raise NotFoundException(f"Match with id {match_id} not found")
+    return MatchRead.model_validate(match)
 
 
 def get_all_matches(db: Session, skip: int = 0, limit: int = 100) -> list[MatchRead]:
@@ -31,17 +32,16 @@ def create_match(db: Session, match_in: MatchCreate) -> MatchRead:
     return MatchRead.model_validate(match)
 
 
-def update_match(db: Session, match_id: int, match_update: MatchUpdate) -> MatchRead | None:
+def update_match(db: Session, match_id: int, match_update: MatchUpdate) -> MatchRead:
     match = repo_get_match(db, match_id)
     if not match:
-        return None
+        raise NotFoundException(f"Match with id {match_id} not found")
     updated = repo_update_match(db, match, match_update.model_dump(exclude_unset=True))
     return MatchRead.model_validate(updated)
 
 
-def delete_match(db: Session, match_id: int) -> bool:
+def delete_match(db: Session, match_id: int) -> None:
     match = repo_get_match(db, match_id)
     if not match:
-        return False
+        raise NotFoundException(f"Match with id {match_id} not found")
     repo_delete_match(db, match)
-    return True

@@ -1,6 +1,6 @@
 """Match controller (FastAPI router) handling HTTP requests for Match entity."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.schemas.match import MatchCreate, MatchRead, MatchUpdate
@@ -23,10 +23,7 @@ def create_match_endpoint(match: MatchCreate, db: Session = Depends(get_db)):
 
 @router.get("/{match_id}", response_model=MatchRead)
 def get_match_endpoint(match_id: int, db: Session = Depends(get_db)):
-    match = service_get_match(db, match_id)
-    if not match:
-        raise HTTPException(status_code=404, detail="Match not found")
-    return match
+    return service_get_match(db, match_id)
 
 
 @router.get("/", response_model=list[MatchRead])
@@ -36,15 +33,10 @@ def list_matches_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends
 
 @router.put("/{match_id}", response_model=MatchRead)
 def update_match_endpoint(match_id: int, match_update: MatchUpdate, db: Session = Depends(get_db)):
-    updated = service_update_match(db, match_id, match_update)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Match not found")
-    return updated
+    return service_update_match(db, match_id, match_update)
 
 
 @router.delete("/{match_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_match_endpoint(match_id: int, db: Session = Depends(get_db)):
-    success = service_delete_match(db, match_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Match not found")
+    service_delete_match(db, match_id)
     return None

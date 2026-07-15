@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.exceptions import AlreadyExistsException, NotFoundException
 from app.schemas.team import TeamCreate, TeamRead, TeamUpdate
 from app.repositories.team_repository import (
     get_team as repo_get_team,
@@ -11,14 +12,15 @@ from app.repositories.team_repository import (
     create_team as repo_create_team,
     update_team as repo_update_team,
     delete_team as repo_delete_team,
+    get_team_by_tag as repo_get_team_by_tag,
 )
 
 
-def get_team_by_id(db: Session, team_id: int) -> TeamRead | None:
+def get_team_by_id(db: Session, team_id: int) -> TeamRead:
     team = repo_get_team(db, team_id)
-    if team:
-        return TeamRead.model_validate(team)
-    return None
+    if not team:
+        raise NotFoundException(f"Team with id {team_id} not found")
+    return TeamRead.model_validate(team)
 
 
 def get_all_teams(db: Session, skip: int = 0, limit: int = 100) -> list[TeamRead]:
@@ -27,21 +29,27 @@ def get_all_teams(db: Session, skip: int = 0, limit: int = 100) -> list[TeamRead
 
 
 def create_team(db: Session, team_in: TeamCreate) -> TeamRead:
+    existing = repo_get_team_by_tag(db, team_in.tag)
+    if existing:
+        raise AlreadyExistsException(f"Team with tag '{team_in.tag}' already exists")
     team = repo_create_team(db, team_in.model_dump())
     return TeamRead.model_validate(team)
 
 
-def update_team(db: Session, team_id: int, team_update: TeamUpdate) -> TeamRead | None:
+def update_team(db: Session, team_id: int, team_update: TeamUpdate) -> TeamRead:
     team = repo_get_team(db, team_id)
     if not team:
-        return None
+        raise NotFoundException(f"Team with id {team_id} not found")
+    if team_update.tag is not None and team_update.tag != team.tag:
+        existing = repo_get_team_by_tag(db, team_update.tag)
+        if existing:
+            raise AlreadyExistsException(f"Team with tag '{team_update.tag}' already exists")
     updated = repo_update_team(db, team, team_update.model_dump(exclude_unset=True))
     return TeamRead.model_validate(updated)
 
 
-def delete_team(db: Session, team_id: int) -> bool:
+def delete_team(db: Session, team_id: int) -> None:
     team = repo_get_team(db, team_id)
     if not team:
-        return False
+        raise NotFoundException(f"Team with id {team_id} not found")
     repo_delete_team(db, team)
-    return True

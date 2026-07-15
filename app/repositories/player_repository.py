@@ -11,6 +11,10 @@ def get_player(db: Session, player_id: int) -> Player | None:
     return db.query(Player).filter(Player.id == player_id).first()
 
 
+def get_player_by_nickname(db: Session, nickname: str) -> Player | None:
+    return db.query(Player).filter(Player.nickname == nickname).first()
+
+
 def get_players(db: Session, skip: int = 0, limit: int = 100) -> list[Player]:
     return db.query(Player).offset(skip).limit(limit).all()
 

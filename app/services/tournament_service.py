@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.exceptions import NotFoundException
 from app.schemas.tournament import TournamentCreate, TournamentRead, TournamentUpdate
 from app.repositories.tournament_repository import (
     get_tournament as repo_get_tournament,
@@ -14,11 +15,11 @@ from app.repositories.tournament_repository import (
 )
 
 
-def get_tournament_by_id(db: Session, tournament_id: int) -> TournamentRead | None:
+def get_tournament_by_id(db: Session, tournament_id: int) -> TournamentRead:
     tournament = repo_get_tournament(db, tournament_id)
-    if tournament:
-        return TournamentRead.model_validate(tournament)
-    return None
+    if not tournament:
+        raise NotFoundException(f"Tournament with id {tournament_id} not found")
+    return TournamentRead.model_validate(tournament)
 
 
 def get_all_tournaments(db: Session, skip: int = 0, limit: int = 100) -> list[TournamentRead]:
@@ -31,17 +32,16 @@ def create_tournament(db: Session, tournament_in: TournamentCreate) -> Tournamen
     return TournamentRead.model_validate(tournament)
 
 
-def update_tournament(db: Session, tournament_id: int, tournament_update: TournamentUpdate) -> TournamentRead | None:
+def update_tournament(db: Session, tournament_id: int, tournament_update: TournamentUpdate) -> TournamentRead:
     tournament = repo_get_tournament(db, tournament_id)
     if not tournament:
-        return None
+        raise NotFoundException(f"Tournament with id {tournament_id} not found")
     updated = repo_update_tournament(db, tournament, tournament_update.model_dump(exclude_unset=True))
     return TournamentRead.model_validate(updated)
 
 
-def delete_tournament(db: Session, tournament_id: int) -> bool:
+def delete_tournament(db: Session, tournament_id: int) -> None:
     tournament = repo_get_tournament(db, tournament_id)
     if not tournament:
-        return False
+        raise NotFoundException(f"Tournament with id {tournament_id} not found")
     repo_delete_tournament(db, tournament)
-    return True

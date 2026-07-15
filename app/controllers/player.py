@@ -1,6 +1,6 @@
 """Player controller (FastAPI router) handling HTTP requests for Player entity."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.schemas.player import PlayerCreate, PlayerRead, PlayerUpdate
@@ -23,10 +23,7 @@ def create_player_endpoint(player: PlayerCreate, db: Session = Depends(get_db)):
 
 @router.get("/{player_id}", response_model=PlayerRead)
 def get_player_endpoint(player_id: int, db: Session = Depends(get_db)):
-    player = service_get_player(db, player_id)
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
-    return player
+    return service_get_player(db, player_id)
 
 
 @router.get("/", response_model=list[PlayerRead])
@@ -36,15 +33,10 @@ def list_players_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends
 
 @router.put("/{player_id}", response_model=PlayerRead)
 def update_player_endpoint(player_id: int, player_update: PlayerUpdate, db: Session = Depends(get_db)):
-    updated = service_update_player(db, player_id, player_update)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Player not found")
-    return updated
+    return service_update_player(db, player_id, player_update)
 
 
 @router.delete("/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_player_endpoint(player_id: int, db: Session = Depends(get_db)):
-    success = service_delete_player(db, player_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Player not found")
+    service_delete_player(db, player_id)
     return None

@@ -1,6 +1,6 @@
 """Team controller (FastAPI router) handling HTTP requests for Team entity."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.schemas.team import TeamCreate, TeamRead, TeamUpdate
@@ -22,10 +22,7 @@ def create_team_endpoint(team: TeamCreate, db: Session = Depends(get_db)):
 
 @router.get("/{team_id}", response_model=TeamRead)
 def get_team_endpoint(team_id: int, db: Session = Depends(get_db)):
-    team = service_get_team(db, team_id)
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
-    return team
+    return service_get_team(db, team_id)
 
 @router.get("/", response_model=list[TeamRead])
 def list_teams_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -33,14 +30,9 @@ def list_teams_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(g
 
 @router.put("/{team_id}", response_model=TeamRead)
 def update_team_endpoint(team_id: int, team_update: TeamUpdate, db: Session = Depends(get_db)):
-    updated = service_update_team(db, team_id, team_update)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Team not found")
-    return updated
+    return service_update_team(db, team_id, team_update)
 
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team_endpoint(team_id: int, db: Session = Depends(get_db)):
-    success = service_delete_team(db, team_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Team not found")
+    service_delete_team(db, team_id)
     return None
