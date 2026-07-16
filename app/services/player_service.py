@@ -15,6 +15,7 @@ from app.repositories.player_repository import (
     delete_player as repo_delete_player,
     get_player_by_nickname as repo_get_player_by_nickname,
 )
+from app.repositories.team_repository import get_team as repo_get_team
 
 VALID_SORT_COLUMNS = {
     "id", "nickname", "real_name", "country", "age", "role", "team_id",
@@ -60,6 +61,8 @@ def create_player(db: Session, player_in: PlayerCreate) -> PlayerRead:
     existing = repo_get_player_by_nickname(db, player_in.nickname)
     if existing:
         raise AlreadyExistsException(f"Player with nickname '{player_in.nickname}' already exists")
+    if not repo_get_team(db, player_in.team_id):
+        raise NotFoundException(f"Team with id {player_in.team_id} not found")
     player = repo_create_player(db, player_in.model_dump())
     return PlayerRead.model_validate(player)
 
@@ -72,6 +75,9 @@ def update_player(db: Session, player_id: int, player_update: PlayerUpdate) -> P
         existing = repo_get_player_by_nickname(db, player_update.nickname)
         if existing:
             raise AlreadyExistsException(f"Player with nickname '{player_update.nickname}' already exists")
+    if player_update.team_id is not None and player_update.team_id != player.team_id:
+        if not repo_get_team(db, player_update.team_id):
+            raise NotFoundException(f"Team with id {player_update.team_id} not found")
     updated = repo_update_player(db, player, player_update.model_dump(exclude_unset=True))
     return PlayerRead.model_validate(updated)
 

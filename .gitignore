@@ -13,5 +13,4 @@ env/
 .idea/
 .vscode/
 .DS_Store
-.gitignore
 .python-version

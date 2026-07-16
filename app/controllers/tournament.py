@@ -14,20 +14,36 @@ from app.services.tournament_service import (
 )
 from app.dependencies.database import get_db
 
-router = APIRouter()
+router = APIRouter(tags=["tournaments"])
 
 
-@router.post("/", response_model=TournamentRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=TournamentRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a tournament",
+    description="Schedule a new tournament. Prize pool must be non-negative and end_date must be after start_date.",
+)
 def create_tournament_endpoint(tournament: TournamentCreate, db: Session = Depends(get_db)):
     return service_create_tournament(db, tournament)
 
 
-@router.get("/{tournament_id}", response_model=TournamentRead)
+@router.get(
+    "/{tournament_id}",
+    response_model=TournamentRead,
+    summary="Get a tournament by ID",
+    description="Retrieve a single tournament by its unique identifier.",
+)
 def get_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
     return service_get_tournament(db, tournament_id)
 
 
-@router.get("/", response_model=PaginatedResponse[TournamentRead])
+@router.get(
+    "/",
+    response_model=PaginatedResponse[TournamentRead],
+    summary="List all tournaments",
+    description="Paginated list of all tournaments with optional sorting by name, game, location, prize_pool, start_date, end_date, or status.",
+)
 def list_tournaments_endpoint(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
@@ -38,12 +54,22 @@ def list_tournaments_endpoint(
     return service_get_all_tournaments(db, page=page, size=size, sort_by=sort_by, order=order)
 
 
-@router.put("/{tournament_id}", response_model=TournamentRead)
+@router.put(
+    "/{tournament_id}",
+    response_model=TournamentRead,
+    summary="Update a tournament",
+    description="Update one or more fields of an existing tournament.",
+)
 def update_tournament_endpoint(tournament_id: int, tournament_update: TournamentUpdate, db: Session = Depends(get_db)):
     return service_update_tournament(db, tournament_id, tournament_update)
 
 
-@router.delete("/{tournament_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{tournament_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a tournament",
+    description="Permanently remove a tournament and all its matches.",
+)
 def delete_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
     service_delete_tournament(db, tournament_id)
     return None

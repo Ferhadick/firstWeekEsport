@@ -14,20 +14,36 @@ from app.services.player_service import (
 )
 from app.dependencies.database import get_db
 
-router = APIRouter()
+router = APIRouter(tags=["players"])
 
 
-@router.post("/", response_model=PlayerRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=PlayerRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a player",
+    description="Add a new player to a team. Age must be between 13 and 60. The team must already exist.",
+)
 def create_player_endpoint(player: PlayerCreate, db: Session = Depends(get_db)):
     return service_create_player(db, player)
 
 
-@router.get("/{player_id}", response_model=PlayerRead)
+@router.get(
+    "/{player_id}",
+    response_model=PlayerRead,
+    summary="Get a player by ID",
+    description="Retrieve a single player by their unique identifier.",
+)
 def get_player_endpoint(player_id: int, db: Session = Depends(get_db)):
     return service_get_player(db, player_id)
 
 
-@router.get("/", response_model=PaginatedResponse[PlayerRead])
+@router.get(
+    "/",
+    response_model=PaginatedResponse[PlayerRead],
+    summary="List all players",
+    description="Paginated list of all players with optional sorting by nickname, real_name, country, age, role, or team_id.",
+)
 def list_players_endpoint(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
@@ -38,12 +54,22 @@ def list_players_endpoint(
     return service_get_all_players(db, page=page, size=size, sort_by=sort_by, order=order)
 
 
-@router.put("/{player_id}", response_model=PlayerRead)
+@router.put(
+    "/{player_id}",
+    response_model=PlayerRead,
+    summary="Update a player",
+    description="Update one or more fields of an existing player.",
+)
 def update_player_endpoint(player_id: int, player_update: PlayerUpdate, db: Session = Depends(get_db)):
     return service_update_player(db, player_id, player_update)
 
 
-@router.delete("/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{player_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a player",
+    description="Permanently remove a player from the system.",
+)
 def delete_player_endpoint(player_id: int, db: Session = Depends(get_db)):
     service_delete_player(db, player_id)
     return None

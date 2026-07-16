@@ -14,7 +14,14 @@ from app.exceptions import (
     NotFoundException,
 )
 
-app = FastAPI(title="Esports Tournament API")
+app = FastAPI(
+    title="Esports Tournament API",
+    description=(
+        "A RESTful API for managing esports tournaments, teams, players, and matches. "
+        "Supports full CRUD operations with pagination, sorting, and business-rule validation."
+    ),
+    version="1.0.0",
+)
 
 # Include routers
 from app.controllers.team import router as team_router
