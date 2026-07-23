@@ -5,6 +5,7 @@ import pytest
 
 from app.exceptions import BusinessValidationException, NotFoundException
 from app.schemas.match import MatchCreate, MatchRead, MatchUpdate
+from app.repositories.match_repository import MatchRepository
 
 
 def make_mock_match(**kwargs):
@@ -25,7 +26,7 @@ def make_mock_match(**kwargs):
 
 
 class TestCreateMatch:
-    @patch("app.services.match_service.repo_create_match")
+    @patch.object(MatchRepository, "create")
     def test_create_success(self, mock_create, db_session):
         future = datetime.now(timezone.utc) + timedelta(days=7)
         mock_create.return_value = make_mock_match(scheduled_at=future)
@@ -43,11 +44,11 @@ class TestCreateMatch:
 
         assert isinstance(result, MatchRead)
         assert result.id == 1
-        mock_create.assert_called_once_with(db_session, data.model_dump())
+        mock_create.assert_called_once_with(data.model_dump())
 
 
 class TestGetMatchById:
-    @patch("app.services.match_service.repo_get_match")
+    @patch.object(MatchRepository, "get")
     def test_get_success(self, mock_get, db_session):
         mock_get.return_value = make_mock_match()
 
@@ -56,9 +57,9 @@ class TestGetMatchById:
 
         assert isinstance(result, MatchRead)
         assert result.id == 1
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
 
-    @patch("app.services.match_service.repo_get_match")
+    @patch.object(MatchRepository, "get")
     def test_get_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -69,7 +70,7 @@ class TestGetMatchById:
 
 
 class TestGetAllMatches:
-    @patch("app.services.match_service.repo_get_matches")
+    @patch.object(MatchRepository, "get_all")
     def test_pagination(self, mock_get, db_session):
         mock_get.return_value = ([make_mock_match()], 1)
 
@@ -80,7 +81,7 @@ class TestGetAllMatches:
         assert result.total == 1
         assert len(result.items) == 1
 
-    @patch("app.services.match_service.repo_get_matches")
+    @patch.object(MatchRepository, "get_all")
     def test_sorting(self, mock_get, db_session):
         mock_get.return_value = ([make_mock_match()], 1)
 
@@ -89,7 +90,7 @@ class TestGetAllMatches:
 
         assert len(result.items) == 1
         mock_get.assert_called_once_with(
-            db_session, page=1, size=10, sort_by="scheduled_at", order="asc",
+            page=1, size=10, sort_by="scheduled_at", order="asc",
         )
 
     def test_invalid_sort_column(self, db_session):
@@ -106,8 +107,8 @@ class TestGetAllMatches:
 
 
 class TestUpdateMatch:
-    @patch("app.services.match_service.repo_get_match")
-    @patch("app.services.match_service.repo_update_match")
+    @patch.object(MatchRepository, "get")
+    @patch.object(MatchRepository, "update")
     def test_update_success(self, mock_update, mock_get, db_session):
         mock_get.return_value = make_mock_match()
         mock_update.return_value = make_mock_match(status="completed")
@@ -118,10 +119,10 @@ class TestUpdateMatch:
 
         assert isinstance(result, MatchRead)
         assert result.status == "completed"
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
         mock_update.assert_called_once()
 
-    @patch("app.services.match_service.repo_get_match")
+    @patch.object(MatchRepository, "get")
     def test_update_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -132,18 +133,18 @@ class TestUpdateMatch:
 
 
 class TestDeleteMatch:
-    @patch("app.services.match_service.repo_get_match")
-    @patch("app.services.match_service.repo_delete_match")
+    @patch.object(MatchRepository, "get")
+    @patch.object(MatchRepository, "delete")
     def test_delete_success(self, mock_delete, mock_get, db_session):
         mock_get.return_value = make_mock_match()
 
         from app.services.match_service import delete_match
         delete_match(db_session, 1)
 
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
         mock_delete.assert_called_once()
 
-    @patch("app.services.match_service.repo_get_match")
+    @patch.object(MatchRepository, "get")
     def test_delete_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 

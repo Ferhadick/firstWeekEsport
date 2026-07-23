@@ -4,6 +4,7 @@ import pytest
 
 from app.exceptions import AlreadyExistsException, BusinessValidationException, NotFoundException
 from app.schemas.team import TeamCreate, TeamRead, TeamUpdate
+from app.repositories.team_repository import TeamRepository
 
 
 def make_mock_team(**kwargs):
@@ -18,8 +19,8 @@ def make_mock_team(**kwargs):
 
 
 class TestCreateTeam:
-    @patch("app.services.team_service.repo_get_team_by_tag")
-    @patch("app.services.team_service.repo_create_team")
+    @patch.object(TeamRepository, "get_by_tag")
+    @patch.object(TeamRepository, "create")
     def test_create_success(self, mock_create, mock_get_by_tag, db_session):
         mock_get_by_tag.return_value = None
         mock_create.return_value = make_mock_team()
@@ -37,10 +38,10 @@ class TestCreateTeam:
         assert isinstance(result, TeamRead)
         assert result.id == 1
         assert result.tag == "FNC"
-        mock_get_by_tag.assert_called_once_with(db_session, "FNC")
-        mock_create.assert_called_once_with(db_session, data.model_dump())
+        mock_get_by_tag.assert_called_once_with("FNC")
+        mock_create.assert_called_once_with(data.model_dump())
 
-    @patch("app.services.team_service.repo_get_team_by_tag")
+    @patch.object(TeamRepository, "get_by_tag")
     def test_create_duplicate_tag(self, mock_get_by_tag, db_session):
         mock_get_by_tag.return_value = make_mock_team()
 
@@ -58,7 +59,7 @@ class TestCreateTeam:
 
 
 class TestGetTeamById:
-    @patch("app.services.team_service.repo_get_team")
+    @patch.object(TeamRepository, "get")
     def test_get_success(self, mock_get, db_session):
         mock_get.return_value = make_mock_team()
 
@@ -67,9 +68,9 @@ class TestGetTeamById:
 
         assert isinstance(result, TeamRead)
         assert result.id == 1
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
 
-    @patch("app.services.team_service.repo_get_team")
+    @patch.object(TeamRepository, "get")
     def test_get_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -80,7 +81,7 @@ class TestGetTeamById:
 
 
 class TestGetAllTeams:
-    @patch("app.services.team_service.repo_get_teams")
+    @patch.object(TeamRepository, "get_all")
     def test_pagination(self, mock_get, db_session):
         mock_get.return_value = ([make_mock_team()], 1)
 
@@ -92,7 +93,7 @@ class TestGetAllTeams:
         assert result.total == 1
         assert len(result.items) == 1
 
-    @patch("app.services.team_service.repo_get_teams")
+    @patch.object(TeamRepository, "get_all")
     def test_sorting(self, mock_get, db_session):
         mock_get.return_value = ([make_mock_team()], 1)
 
@@ -101,7 +102,7 @@ class TestGetAllTeams:
 
         assert len(result.items) == 1
         mock_get.assert_called_once_with(
-            db_session, page=1, size=10, sort_by="name", order="asc",
+            page=1, size=10, sort_by="name", order="asc",
         )
 
     def test_invalid_sort_column(self, db_session):
@@ -118,9 +119,9 @@ class TestGetAllTeams:
 
 
 class TestUpdateTeam:
-    @patch("app.services.team_service.repo_get_team")
-    @patch("app.services.team_service.repo_get_team_by_tag")
-    @patch("app.services.team_service.repo_update_team")
+    @patch.object(TeamRepository, "get")
+    @patch.object(TeamRepository, "get_by_tag")
+    @patch.object(TeamRepository, "update")
     def test_update_success(self, mock_update, mock_get_by_tag, mock_get, db_session):
         mock_get.return_value = make_mock_team()
         mock_get_by_tag.return_value = None
@@ -133,7 +134,7 @@ class TestUpdateTeam:
         assert isinstance(result, TeamRead)
         assert result.name == "Updated Fnatic"
 
-    @patch("app.services.team_service.repo_get_team")
+    @patch.object(TeamRepository, "get")
     def test_update_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -142,8 +143,8 @@ class TestUpdateTeam:
             update_team(db_session, 999, TeamUpdate())
         assert "999" in str(exc.value.message)
 
-    @patch("app.services.team_service.repo_get_team")
-    @patch("app.services.team_service.repo_get_team_by_tag")
+    @patch.object(TeamRepository, "get")
+    @patch.object(TeamRepository, "get_by_tag")
     def test_update_duplicate_tag(self, mock_get_by_tag, mock_get, db_session):
         mock_get.return_value = make_mock_team(id=1, tag="OLD")
         mock_get_by_tag.return_value = make_mock_team(id=2, tag="TAKEN")
@@ -153,8 +154,8 @@ class TestUpdateTeam:
             update_team(db_session, 1, TeamUpdate(tag="TAKEN"))
         assert "TAKEN" in str(exc.value.message)
 
-    @patch("app.services.team_service.repo_get_team")
-    @patch("app.services.team_service.repo_update_team")
+    @patch.object(TeamRepository, "get")
+    @patch.object(TeamRepository, "update")
     def test_update_same_tag_skips_duplicate_check(self, mock_update, mock_get, db_session):
         existing = make_mock_team(id=1, tag="FNC")
         mock_get.return_value = existing
@@ -163,11 +164,10 @@ class TestUpdateTeam:
         from app.services.team_service import update_team
         update_team(db_session, 1, TeamUpdate(tag="FNC"))
 
-        from app.services.team_service import repo_get_team_by_tag
-        repo_get_team_by_tag_not_called = True
+        mock_update.assert_called_once()
 
-    @patch("app.services.team_service.repo_get_team")
-    @patch("app.services.team_service.repo_update_team")
+    @patch.object(TeamRepository, "get")
+    @patch.object(TeamRepository, "update")
     def test_update_no_tag_skips_duplicate_check(self, mock_update, mock_get, db_session):
         mock_get.return_value = make_mock_team()
         mock_update.return_value = make_mock_team(name="New Name")
@@ -179,18 +179,18 @@ class TestUpdateTeam:
 
 
 class TestDeleteTeam:
-    @patch("app.services.team_service.repo_get_team")
-    @patch("app.services.team_service.repo_delete_team")
+    @patch.object(TeamRepository, "get")
+    @patch.object(TeamRepository, "delete")
     def test_delete_success(self, mock_delete, mock_get, db_session):
         mock_get.return_value = make_mock_team()
 
         from app.services.team_service import delete_team
         delete_team(db_session, 1)
 
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
         mock_delete.assert_called_once()
 
-    @patch("app.services.team_service.repo_get_team")
+    @patch.object(TeamRepository, "get")
     def test_delete_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 

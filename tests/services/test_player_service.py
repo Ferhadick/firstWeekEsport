@@ -4,6 +4,7 @@ import pytest
 
 from app.exceptions import AlreadyExistsException, BusinessValidationException, NotFoundException
 from app.schemas.player import PlayerCreate, PlayerRead, PlayerUpdate
+from app.repositories.player_repository import PlayerRepository
 
 
 def make_mock_player(**kwargs):
@@ -19,8 +20,8 @@ def make_mock_player(**kwargs):
 
 
 class TestCreatePlayer:
-    @patch("app.services.player_service.repo_get_player_by_nickname")
-    @patch("app.services.player_service.repo_create_player")
+    @patch.object(PlayerRepository, "get_by_nickname")
+    @patch.object(PlayerRepository, "create")
     def test_create_success(self, mock_create, mock_get_by_nickname, db_session):
         mock_get_by_nickname.return_value = None
         mock_create.return_value = make_mock_player()
@@ -40,10 +41,10 @@ class TestCreatePlayer:
         assert isinstance(result, PlayerRead)
         assert result.id == 1
         assert result.nickname == "Caps"
-        mock_get_by_nickname.assert_called_once_with(db_session, "Caps")
-        mock_create.assert_called_once_with(db_session, data.model_dump())
+        mock_get_by_nickname.assert_called_once_with("Caps")
+        mock_create.assert_called_once_with(data.model_dump())
 
-    @patch("app.services.player_service.repo_get_player_by_nickname")
+    @patch.object(PlayerRepository, "get_by_nickname")
     def test_create_duplicate_nickname(self, mock_get_by_nickname, db_session):
         mock_get_by_nickname.return_value = make_mock_player()
 
@@ -63,7 +64,7 @@ class TestCreatePlayer:
 
 
 class TestGetPlayerById:
-    @patch("app.services.player_service.repo_get_player")
+    @patch.object(PlayerRepository, "get")
     def test_get_success(self, mock_get, db_session):
         mock_get.return_value = make_mock_player()
 
@@ -72,9 +73,9 @@ class TestGetPlayerById:
 
         assert isinstance(result, PlayerRead)
         assert result.id == 1
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
 
-    @patch("app.services.player_service.repo_get_player")
+    @patch.object(PlayerRepository, "get")
     def test_get_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -85,7 +86,7 @@ class TestGetPlayerById:
 
 
 class TestGetAllPlayers:
-    @patch("app.services.player_service.repo_get_players")
+    @patch.object(PlayerRepository, "get_all")
     def test_pagination(self, mock_get, db_session):
         mock_get.return_value = ([make_mock_player()], 1)
 
@@ -96,7 +97,7 @@ class TestGetAllPlayers:
         assert result.total == 1
         assert len(result.items) == 1
 
-    @patch("app.services.player_service.repo_get_players")
+    @patch.object(PlayerRepository, "get_all")
     def test_sorting(self, mock_get, db_session):
         mock_get.return_value = ([make_mock_player()], 1)
 
@@ -105,7 +106,7 @@ class TestGetAllPlayers:
 
         assert len(result.items) == 1
         mock_get.assert_called_once_with(
-            db_session, page=1, size=10, sort_by="nickname", order="desc",
+            page=1, size=10, sort_by="nickname", order="desc",
         )
 
     def test_invalid_sort_column(self, db_session):
@@ -122,9 +123,9 @@ class TestGetAllPlayers:
 
 
 class TestUpdatePlayer:
-    @patch("app.services.player_service.repo_get_player")
-    @patch("app.services.player_service.repo_get_player_by_nickname")
-    @patch("app.services.player_service.repo_update_player")
+    @patch.object(PlayerRepository, "get")
+    @patch.object(PlayerRepository, "get_by_nickname")
+    @patch.object(PlayerRepository, "update")
     def test_update_success(self, mock_update, mock_get_by_nickname, mock_get, db_session):
         mock_get.return_value = make_mock_player()
         mock_get_by_nickname.return_value = None
@@ -137,7 +138,7 @@ class TestUpdatePlayer:
         assert isinstance(result, PlayerRead)
         assert result.nickname == "NewNick"
 
-    @patch("app.services.player_service.repo_get_player")
+    @patch.object(PlayerRepository, "get")
     def test_update_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -146,8 +147,8 @@ class TestUpdatePlayer:
             update_player(db_session, 999, PlayerUpdate())
         assert "999" in str(exc.value.message)
 
-    @patch("app.services.player_service.repo_get_player")
-    @patch("app.services.player_service.repo_get_player_by_nickname")
+    @patch.object(PlayerRepository, "get")
+    @patch.object(PlayerRepository, "get_by_nickname")
     def test_update_duplicate_nickname(self, mock_get_by_nickname, mock_get, db_session):
         mock_get.return_value = make_mock_player(id=1, nickname="Old")
         mock_get_by_nickname.return_value = make_mock_player(id=2, nickname="Taken")
@@ -157,8 +158,8 @@ class TestUpdatePlayer:
             update_player(db_session, 1, PlayerUpdate(nickname="Taken"))
         assert "Taken" in str(exc.value.message)
 
-    @patch("app.services.player_service.repo_get_player")
-    @patch("app.services.player_service.repo_update_player")
+    @patch.object(PlayerRepository, "get")
+    @patch.object(PlayerRepository, "update")
     def test_update_same_nickname_skips_duplicate_check(self, mock_update, mock_get, db_session):
         existing = make_mock_player(id=1, nickname="Caps")
         mock_get.return_value = existing
@@ -169,8 +170,8 @@ class TestUpdatePlayer:
 
         mock_update.assert_called_once()
 
-    @patch("app.services.player_service.repo_get_player")
-    @patch("app.services.player_service.repo_update_player")
+    @patch.object(PlayerRepository, "get")
+    @patch.object(PlayerRepository, "update")
     def test_update_no_nickname_skips_duplicate_check(self, mock_update, mock_get, db_session):
         mock_get.return_value = make_mock_player()
         mock_update.return_value = make_mock_player(age=30)
@@ -182,18 +183,18 @@ class TestUpdatePlayer:
 
 
 class TestDeletePlayer:
-    @patch("app.services.player_service.repo_get_player")
-    @patch("app.services.player_service.repo_delete_player")
+    @patch.object(PlayerRepository, "get")
+    @patch.object(PlayerRepository, "delete")
     def test_delete_success(self, mock_delete, mock_get, db_session):
         mock_get.return_value = make_mock_player()
 
         from app.services.player_service import delete_player
         delete_player(db_session, 1)
 
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
         mock_delete.assert_called_once()
 
-    @patch("app.services.player_service.repo_get_player")
+    @patch.object(PlayerRepository, "get")
     def test_delete_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 

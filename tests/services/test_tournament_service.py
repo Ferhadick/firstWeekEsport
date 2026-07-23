@@ -6,6 +6,7 @@ import pytest
 
 from app.exceptions import BusinessValidationException, NotFoundException
 from app.schemas.tournament import TournamentCreate, TournamentRead, TournamentUpdate
+from app.repositories.tournament_repository import TournamentRepository
 
 
 def make_mock_tournament(**kwargs):
@@ -22,7 +23,7 @@ def make_mock_tournament(**kwargs):
 
 
 class TestCreateTournament:
-    @patch("app.services.tournament_service.repo_create_tournament")
+    @patch.object(TournamentRepository, "create")
     def test_create_success(self, mock_create, db_session):
         mock_create.return_value = make_mock_tournament()
         data = TournamentCreate(
@@ -41,11 +42,11 @@ class TestCreateTournament:
         assert isinstance(result, TournamentRead)
         assert result.id == 1
         assert result.name == "World Championship"
-        mock_create.assert_called_once_with(db_session, data.model_dump())
+        mock_create.assert_called_once_with(data.model_dump())
 
 
 class TestGetTournamentById:
-    @patch("app.services.tournament_service.repo_get_tournament")
+    @patch.object(TournamentRepository, "get")
     def test_get_success(self, mock_get, db_session):
         mock_get.return_value = make_mock_tournament()
 
@@ -55,9 +56,9 @@ class TestGetTournamentById:
         assert isinstance(result, TournamentRead)
         assert result.id == 1
         assert result.name == "World Championship"
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
 
-    @patch("app.services.tournament_service.repo_get_tournament")
+    @patch.object(TournamentRepository, "get")
     def test_get_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -68,7 +69,7 @@ class TestGetTournamentById:
 
 
 class TestGetAllTournaments:
-    @patch("app.services.tournament_service.repo_get_tournaments")
+    @patch.object(TournamentRepository, "get_all")
     def test_default_pagination(self, mock_get, db_session):
         mock_t = make_mock_tournament()
         mock_get.return_value = ([mock_t], 1)
@@ -82,10 +83,10 @@ class TestGetAllTournaments:
         assert result.pages == 1
         assert len(result.items) == 1
         mock_get.assert_called_once_with(
-            db_session, page=1, size=10, sort_by=None, order=None,
+            page=1, size=10, sort_by=None, order=None,
         )
 
-    @patch("app.services.tournament_service.repo_get_tournaments")
+    @patch.object(TournamentRepository, "get_all")
     def test_custom_pagination(self, mock_get, db_session):
         mock_t = make_mock_tournament()
         mock_get.return_value = ([mock_t], 35)
@@ -98,10 +99,10 @@ class TestGetAllTournaments:
         assert result.total == 35
         assert result.pages == 2
         mock_get.assert_called_once_with(
-            db_session, page=2, size=20, sort_by=None, order=None,
+            page=2, size=20, sort_by=None, order=None,
         )
 
-    @patch("app.services.tournament_service.repo_get_tournaments")
+    @patch.object(TournamentRepository, "get_all")
     def test_pages_rounded_up(self, mock_get, db_session):
         mock_t = make_mock_tournament()
         mock_get.return_value = ([mock_t], 11)
@@ -111,7 +112,7 @@ class TestGetAllTournaments:
 
         assert result.pages == 2
 
-    @patch("app.services.tournament_service.repo_get_tournaments")
+    @patch.object(TournamentRepository, "get_all")
     def test_zero_items(self, mock_get, db_session):
         mock_get.return_value = ([], 0)
 
@@ -122,7 +123,7 @@ class TestGetAllTournaments:
         assert result.total == 0
         assert result.pages == 0
 
-    @patch("app.services.tournament_service.repo_get_tournaments")
+    @patch.object(TournamentRepository, "get_all")
     def test_sorting(self, mock_get, db_session):
         mock_t = make_mock_tournament()
         mock_get.return_value = ([mock_t], 1)
@@ -132,7 +133,7 @@ class TestGetAllTournaments:
 
         assert len(result.items) == 1
         mock_get.assert_called_once_with(
-            db_session, page=1, size=10, sort_by="name", order="desc",
+            page=1, size=10, sort_by="name", order="desc",
         )
 
     def test_invalid_page(self, db_session):
@@ -167,8 +168,8 @@ class TestGetAllTournaments:
 
 
 class TestUpdateTournament:
-    @patch("app.services.tournament_service.repo_get_tournament")
-    @patch("app.services.tournament_service.repo_update_tournament")
+    @patch.object(TournamentRepository, "get")
+    @patch.object(TournamentRepository, "update")
     def test_update_success(self, mock_update, mock_get, db_session):
         mock_get.return_value = make_mock_tournament()
         mock_update.return_value = make_mock_tournament(name="Updated Name")
@@ -179,10 +180,10 @@ class TestUpdateTournament:
 
         assert isinstance(result, TournamentRead)
         assert result.name == "Updated Name"
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
         mock_update.assert_called_once()
 
-    @patch("app.services.tournament_service.repo_get_tournament")
+    @patch.object(TournamentRepository, "get")
     def test_update_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 
@@ -193,18 +194,18 @@ class TestUpdateTournament:
 
 
 class TestDeleteTournament:
-    @patch("app.services.tournament_service.repo_get_tournament")
-    @patch("app.services.tournament_service.repo_delete_tournament")
+    @patch.object(TournamentRepository, "get")
+    @patch.object(TournamentRepository, "delete")
     def test_delete_success(self, mock_delete, mock_get, db_session):
         mock_get.return_value = make_mock_tournament()
 
         from app.services.tournament_service import delete_tournament
         delete_tournament(db_session, 1)
 
-        mock_get.assert_called_once_with(db_session, 1)
+        mock_get.assert_called_once_with(1)
         mock_delete.assert_called_once()
 
-    @patch("app.services.tournament_service.repo_get_tournament")
+    @patch.object(TournamentRepository, "get")
     def test_delete_not_found(self, mock_get, db_session):
         mock_get.return_value = None
 

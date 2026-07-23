@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -7,13 +5,7 @@ from sqlalchemy.orm import Session
 from app.exceptions import BusinessValidationException, NotFoundException
 from app.schemas.pagination import PaginatedResponse, validate_sort_params
 from app.schemas.tournament import TournamentCreate, TournamentRead, TournamentUpdate
-from app.repositories.tournament_repository import (
-    get_tournament as repo_get_tournament,
-    get_tournaments as repo_get_tournaments,
-    create_tournament as repo_create_tournament,
-    update_tournament as repo_update_tournament,
-    delete_tournament as repo_delete_tournament,
-)
+from app.repositories.tournament_repository import TournamentRepository
 
 VALID_SORT_COLUMNS = {
     "id", "name", "game", "location", "prize_pool", "start_date", "end_date", "status",
@@ -21,7 +13,8 @@ VALID_SORT_COLUMNS = {
 
 
 def get_tournament_by_id(db: Session, tournament_id: int) -> TournamentRead:
-    tournament = repo_get_tournament(db, tournament_id)
+    repo = TournamentRepository(db)
+    tournament = repo.get(tournament_id)
     if not tournament:
         raise NotFoundException(f"Tournament with id {tournament_id} not found")
     return TournamentRead.model_validate(tournament)
@@ -42,8 +35,9 @@ def get_all_tournaments(
     sort_by_normalized = sort_by.lower() if sort_by else None
     order_normalized = order.lower() if order else None
     validate_sort_params(sort_by_normalized, order_normalized, VALID_SORT_COLUMNS)
-    tournaments, total = repo_get_tournaments(
-        db, page=page, size=size, sort_by=sort_by_normalized, order=order_normalized,
+    repo = TournamentRepository(db)
+    tournaments, total = repo.get_all(
+        page=page, size=size, sort_by=sort_by_normalized, order=order_normalized,
     )
     pages = (total + size - 1) // size if total else 0
     return PaginatedResponse(
@@ -56,20 +50,23 @@ def get_all_tournaments(
 
 
 def create_tournament(db: Session, tournament_in: TournamentCreate) -> TournamentRead:
-    tournament = repo_create_tournament(db, tournament_in.model_dump())
+    repo = TournamentRepository(db)
+    tournament = repo.create(tournament_in.model_dump())
     return TournamentRead.model_validate(tournament)
 
 
 def update_tournament(db: Session, tournament_id: int, tournament_update: TournamentUpdate) -> TournamentRead:
-    tournament = repo_get_tournament(db, tournament_id)
+    repo = TournamentRepository(db)
+    tournament = repo.get(tournament_id)
     if not tournament:
         raise NotFoundException(f"Tournament with id {tournament_id} not found")
-    updated = repo_update_tournament(db, tournament, tournament_update.model_dump(exclude_unset=True))
+    updated = repo.update(tournament, tournament_update.model_dump(exclude_unset=True))
     return TournamentRead.model_validate(updated)
 
 
 def delete_tournament(db: Session, tournament_id: int) -> None:
-    tournament = repo_get_tournament(db, tournament_id)
+    repo = TournamentRepository(db)
+    tournament = repo.get(tournament_id)
     if not tournament:
         raise NotFoundException(f"Tournament with id {tournament_id} not found")
-    repo_delete_tournament(db, tournament)
+    repo.delete(tournament)
