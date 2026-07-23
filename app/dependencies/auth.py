@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Depends, Header
+from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
@@ -10,14 +10,18 @@ from app.models.user import User, UserRole
 from app.repositories import user_repository
 
 
-def get_token_from_header(authorization: str = Header(...)) -> str:
-    if not authorization.startswith("Bearer "):
-        raise AuthenticationException("Invalid authorization header")
-    return authorization.removeprefix("Bearer ")
+def get_token(request: Request) -> str:
+    authorization = request.headers.get("authorization")
+    if authorization and authorization.startswith("Bearer "):
+        return authorization.removeprefix("Bearer ")
+    access_token = request.cookies.get("access_token")
+    if access_token:
+        return access_token
+    raise AuthenticationException("Not authenticated")
 
 
 def get_current_user(
-    token: str = Depends(get_token_from_header),
+    token: str = Depends(get_token),
     db: Session = Depends(get_db),
 ) -> User:
     payload = decode_access_token(token)

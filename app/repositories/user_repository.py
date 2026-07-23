@@ -31,3 +31,12 @@ def get_by_username_or_email(db: Session, identifier: str) -> User | None:
         .filter((User.username == identifier) | (User.email == identifier))
         .first()
     )
+
+
+def update_role(db: Session, user_id: int, role: str) -> User | None:
+    user = get_by_id(db, user_id)
+    if user:
+        user.role = role
+        db.commit()
+        db.refresh(user)
+    return user

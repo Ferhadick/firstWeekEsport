@@ -49,3 +49,11 @@ class TokenResponse(BaseModel):
         description="Type of the token (always 'bearer')",
         examples=["bearer"],
     )
+
+
+class RoleUpdateRequest(BaseModel):
+    role: str = Field(
+        default="ADMIN",
+        description="New role for the user (USER or ADMIN)",
+        examples=["ADMIN"],
+    )

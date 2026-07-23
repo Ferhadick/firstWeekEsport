@@ -27,3 +27,7 @@ def get_jwt_algorithm() -> str:
 
 def get_access_token_expire_minutes() -> int:
     return int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+
+def get_admin_secret() -> str:
+    return os.getenv("ADMIN_SECRET", "")
