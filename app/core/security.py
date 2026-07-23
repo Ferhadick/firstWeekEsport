@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 
 from app.core.config import (
     get_access_token_expire_minutes,
     get_jwt_algorithm,
     get_jwt_secret,
 )
+from app.exceptions import AuthenticationException
 
 
 def hash_password(password: str) -> str:
@@ -32,12 +33,14 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, get_jwt_secret(), algorithm=get_jwt_algorithm())
 
 
-def decode_access_token(token: str) -> dict | None:
+def decode_access_token(token: str) -> dict:
     try:
         return jwt.decode(
             token,
             get_jwt_secret(),
             algorithms=[get_jwt_algorithm()],
         )
+    except ExpiredSignatureError:
+        raise AuthenticationException("Token has expired")
     except JWTError:
-        return None
+        raise AuthenticationException("Invalid token")

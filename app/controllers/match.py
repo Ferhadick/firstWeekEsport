@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
+from app.dependencies.auth import get_current_user, require_role
+from app.dependencies.database import get_db
+from app.models.user import User, UserRole
 from app.schemas.match import MatchCreate, MatchRead, MatchUpdate
 from app.schemas.pagination import PaginatedResponse
 from app.services.match_service import (
@@ -10,7 +13,6 @@ from app.services.match_service import (
     update_match as service_update_match,
     delete_match as service_delete_match,
 )
-from app.dependencies.database import get_db
 
 router = APIRouter(tags=["matches"])
 
@@ -23,7 +25,11 @@ router = APIRouter(tags=["matches"])
     description="Schedule a new match. The referenced tournament and both teams must already exist. "
     "Team1 and Team2 must be different, and the scheduled time cannot be in the past.",
 )
-def create_match_endpoint(match: MatchCreate, db: Session = Depends(get_db)):
+def create_match_endpoint(
+    match: MatchCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
+):
     return service_create_match(db, match)
 
 
@@ -36,6 +42,7 @@ def create_match_endpoint(match: MatchCreate, db: Session = Depends(get_db)):
 def get_match_endpoint(
     match_id: int = Path(..., description="The unique identifier of the match", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_match(db, match_id)
 
@@ -53,6 +60,7 @@ def list_matches_endpoint(
     sort_by: str | None = Query(None, description="Column to sort by (e.g. status, scheduled_at)", examples=["scheduled_at"]),
     order: str | None = Query("asc", description="Sort order: 'asc' or 'desc'", examples=["asc"]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_all_matches(db, page=page, size=size, sort_by=sort_by, order=order)
 
@@ -67,6 +75,7 @@ def update_match_endpoint(
     match_id: int = Path(..., description="The unique identifier of the match to update", examples=[1]),
     match_update: MatchUpdate = ...,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     return service_update_match(db, match_id, match_update)
 
@@ -80,6 +89,7 @@ def update_match_endpoint(
 def delete_match_endpoint(
     match_id: int = Path(..., description="The unique identifier of the match to delete", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     service_delete_match(db, match_id)
     return None

@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
+from app.dependencies.auth import get_current_user, require_role
+from app.dependencies.database import get_db
+from app.models.user import User, UserRole
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.player import PlayerCreate, PlayerRead, PlayerUpdate
 from app.services.player_service import (
@@ -10,7 +13,6 @@ from app.services.player_service import (
     update_player as service_update_player,
     delete_player as service_delete_player,
 )
-from app.dependencies.database import get_db
 
 router = APIRouter(tags=["players"])
 
@@ -22,7 +24,11 @@ router = APIRouter(tags=["players"])
     summary="Create a player",
     description="Add a new player to a team. Age must be between 13 and 60. The team must already exist.",
 )
-def create_player_endpoint(player: PlayerCreate, db: Session = Depends(get_db)):
+def create_player_endpoint(
+    player: PlayerCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
+):
     return service_create_player(db, player)
 
 
@@ -35,6 +41,7 @@ def create_player_endpoint(player: PlayerCreate, db: Session = Depends(get_db)):
 def get_player_endpoint(
     player_id: int = Path(..., description="The unique identifier of the player", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_player(db, player_id)
 
@@ -51,6 +58,7 @@ def list_players_endpoint(
     sort_by: str | None = Query(None, description="Column to sort by (e.g. nickname, age)", examples=["nickname"]),
     order: str | None = Query("asc", description="Sort order: 'asc' or 'desc'", examples=["asc"]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_all_players(db, page=page, size=size, sort_by=sort_by, order=order)
 
@@ -65,6 +73,7 @@ def update_player_endpoint(
     player_id: int = Path(..., description="The unique identifier of the player to update", examples=[1]),
     player_update: PlayerUpdate = ...,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     return service_update_player(db, player_id, player_update)
 
@@ -78,6 +87,7 @@ def update_player_endpoint(
 def delete_player_endpoint(
     player_id: int = Path(..., description="The unique identifier of the player to delete", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     service_delete_player(db, player_id)
     return None

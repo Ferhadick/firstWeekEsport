@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
+from app.dependencies.auth import get_current_user, require_role
+from app.dependencies.database import get_db
+from app.models.user import User, UserRole
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.tournament import TournamentCreate, TournamentRead, TournamentUpdate
 from app.services.tournament_service import (
@@ -10,7 +13,6 @@ from app.services.tournament_service import (
     update_tournament as service_update_tournament,
     delete_tournament as service_delete_tournament,
 )
-from app.dependencies.database import get_db
 
 router = APIRouter(tags=["tournaments"])
 
@@ -22,7 +24,11 @@ router = APIRouter(tags=["tournaments"])
     summary="Create a tournament",
     description="Schedule a new tournament. Prize pool must be non-negative and end_date must be after start_date.",
 )
-def create_tournament_endpoint(tournament: TournamentCreate, db: Session = Depends(get_db)):
+def create_tournament_endpoint(
+    tournament: TournamentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
+):
     return service_create_tournament(db, tournament)
 
 
@@ -35,6 +41,7 @@ def create_tournament_endpoint(tournament: TournamentCreate, db: Session = Depen
 def get_tournament_endpoint(
     tournament_id: int = Path(..., description="The unique identifier of the tournament", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_tournament(db, tournament_id)
 
@@ -51,6 +58,7 @@ def list_tournaments_endpoint(
     sort_by: str | None = Query(None, description="Column to sort by (e.g. name, prize_pool)", examples=["name"]),
     order: str | None = Query("asc", description="Sort order: 'asc' or 'desc'", examples=["asc"]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_all_tournaments(db, page=page, size=size, sort_by=sort_by, order=order)
 
@@ -65,6 +73,7 @@ def update_tournament_endpoint(
     tournament_id: int = Path(..., description="The unique identifier of the tournament to update", examples=[1]),
     tournament_update: TournamentUpdate = ...,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     return service_update_tournament(db, tournament_id, tournament_update)
 
@@ -78,6 +87,7 @@ def update_tournament_endpoint(
 def delete_tournament_endpoint(
     tournament_id: int = Path(..., description="The unique identifier of the tournament to delete", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     service_delete_tournament(db, tournament_id)
     return None

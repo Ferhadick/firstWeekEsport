@@ -7,6 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.exceptions import (
     AlreadyExistsException,
+    AuthenticationException,
+    AuthorizationException,
     BusinessValidationException,
     DatabaseException,
     NotFoundException,
@@ -46,6 +48,22 @@ def not_found_handler(request: Request, exc: NotFoundException) -> JSONResponse:
 def already_exists_handler(request: Request, exc: AlreadyExistsException) -> JSONResponse:
     return JSONResponse(
         status_code=409,
+        content={"success": False, "message": exc.message, "details": exc.details},
+    )
+
+
+@app.exception_handler(AuthenticationException)
+def authentication_error_handler(request: Request, exc: AuthenticationException) -> JSONResponse:
+    return JSONResponse(
+        status_code=401,
+        content={"success": False, "message": exc.message, "details": exc.details},
+    )
+
+
+@app.exception_handler(AuthorizationException)
+def authorization_error_handler(request: Request, exc: AuthorizationException) -> JSONResponse:
+    return JSONResponse(
+        status_code=403,
         content={"success": False, "message": exc.message, "details": exc.details},
     )
 

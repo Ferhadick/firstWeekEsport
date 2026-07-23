@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
+from app.dependencies.auth import get_current_user, require_role
+from app.dependencies.database import get_db
+from app.models.user import User, UserRole
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.team import TeamCreate, TeamRead, TeamUpdate
 from app.services.team_service import (
@@ -10,7 +13,6 @@ from app.services.team_service import (
     update_team as service_update_team,
     delete_team as service_delete_team,
 )
-from app.dependencies.database import get_db
 
 router = APIRouter(tags=["teams"])
 
@@ -22,7 +24,11 @@ router = APIRouter(tags=["teams"])
     summary="Create a team",
     description="Register a new esports team. The tag must be uppercase and 2-5 characters.",
 )
-def create_team_endpoint(team: TeamCreate, db: Session = Depends(get_db)):
+def create_team_endpoint(
+    team: TeamCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
+):
     return service_create_team(db, team)
 
 
@@ -35,6 +41,7 @@ def create_team_endpoint(team: TeamCreate, db: Session = Depends(get_db)):
 def get_team_endpoint(
     team_id: int = Path(..., description="The unique identifier of the team", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_team(db, team_id)
 
@@ -51,6 +58,7 @@ def list_teams_endpoint(
     sort_by: str | None = Query(None, description="Column to sort by (e.g. name, founded_year)", examples=["name"]),
     order: str | None = Query("asc", description="Sort order: 'asc' or 'desc'", examples=["asc"]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return service_get_all_teams(db, page=page, size=size, sort_by=sort_by, order=order)
 
@@ -65,6 +73,7 @@ def update_team_endpoint(
     team_id: int = Path(..., description="The unique identifier of the team to update", examples=[1]),
     team_update: TeamUpdate = ...,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     return service_update_team(db, team_id, team_update)
 
@@ -78,6 +87,7 @@ def update_team_endpoint(
 def delete_team_endpoint(
     team_id: int = Path(..., description="The unique identifier of the team to delete", examples=[1]),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.ADMIN])),
 ):
     service_delete_team(db, team_id)
     return None

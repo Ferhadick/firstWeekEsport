@@ -22,3 +22,11 @@ class BusinessValidationException(AppException):
 
 class DatabaseException(AppException):
     pass
+
+
+class AuthenticationException(AppException):
+    pass
+
+
+class AuthorizationException(AppException):
+    pass
