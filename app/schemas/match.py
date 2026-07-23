@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -17,14 +15,52 @@ class MatchStatus(str, Enum):
 
 
 class MatchBase(BaseModel):
-    tournament_id: int
-    team1_id: int
-    team2_id: int
-    scheduled_at: datetime
-    status: MatchStatus
-    winner_id: Optional[int] = None
-    score_team1: Optional[int] = Field(None, ge=0)
-    score_team2: Optional[int] = Field(None, ge=0)
+    tournament_id: int = Field(
+        ...,
+        gt=0,
+        description="The ID of the tournament this match belongs to",
+        examples=[1],
+    )
+    team1_id: int = Field(
+        ...,
+        gt=0,
+        description="The ID of the first team (must differ from team2_id)",
+        examples=[1],
+    )
+    team2_id: int = Field(
+        ...,
+        gt=0,
+        description="The ID of the second team (must differ from team1_id)",
+        examples=[2],
+    )
+    scheduled_at: datetime = Field(
+        ...,
+        description="The scheduled date and time of the match (cannot be in the past)",
+        examples=[datetime(2026, 7, 15, 18, 0, 0, tzinfo=timezone.utc)],
+    )
+    status: MatchStatus = Field(
+        ...,
+        description="Current status of the match",
+        examples=[MatchStatus.scheduled],
+    )
+    winner_id: Optional[int] = Field(
+        None,
+        gt=0,
+        description="The ID of the winning team (null until match concludes)",
+        examples=[1],
+    )
+    score_team1: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Score for team1 (null until match is played)",
+        examples=[3],
+    )
+    score_team2: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Score for team2 (null until match is played)",
+        examples=[1],
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -36,6 +72,19 @@ class MatchBase(BaseModel):
 
 
 class MatchCreate(MatchBase):
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "tournament_id": 1,
+                "team1_id": 1,
+                "team2_id": 2,
+                "scheduled_at": "2026-07-15T18:00:00Z",
+                "status": "scheduled",
+            }
+        },
+    )
+
     @model_validator(mode="after")
     def validate_scheduled_at(self):
         scheduled = (
@@ -49,14 +98,52 @@ class MatchCreate(MatchBase):
 
 
 class MatchUpdate(BaseModel):
-    tournament_id: Optional[int] = None
-    team1_id: Optional[int] = None
-    team2_id: Optional[int] = None
-    scheduled_at: Optional[datetime] = None
-    status: Optional[MatchStatus] = None
-    winner_id: Optional[int] = None
-    score_team1: Optional[int] = Field(None, ge=0)
-    score_team2: Optional[int] = Field(None, ge=0)
+    tournament_id: Optional[int] = Field(
+        None,
+        gt=0,
+        description="The ID of the tournament this match belongs to",
+        examples=[2],
+    )
+    team1_id: Optional[int] = Field(
+        None,
+        gt=0,
+        description="The ID of the first team (must differ from team2_id)",
+        examples=[3],
+    )
+    team2_id: Optional[int] = Field(
+        None,
+        gt=0,
+        description="The ID of the second team (must differ from team1_id)",
+        examples=[4],
+    )
+    scheduled_at: Optional[datetime] = Field(
+        None,
+        description="The scheduled date and time of the match",
+        examples=[datetime(2026, 8, 1, 20, 0, 0, tzinfo=timezone.utc)],
+    )
+    status: Optional[MatchStatus] = Field(
+        None,
+        description="Current status of the match",
+        examples=[MatchStatus.live],
+    )
+    winner_id: Optional[int] = Field(
+        None,
+        gt=0,
+        description="The ID of the winning team (null until match concludes)",
+        examples=[1],
+    )
+    score_team1: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Score for team1",
+        examples=[3],
+    )
+    score_team2: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Score for team2",
+        examples=[2],
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -69,4 +156,8 @@ class MatchUpdate(BaseModel):
 
 
 class MatchRead(MatchBase):
-    id: int
+    id: int = Field(
+        ...,
+        description="The unique identifier for the match",
+        examples=[1],
+    )

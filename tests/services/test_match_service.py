@@ -6,6 +6,14 @@ import pytest
 from app.exceptions import BusinessValidationException, NotFoundException
 from app.schemas.match import MatchCreate, MatchRead, MatchUpdate
 from app.repositories.match_repository import MatchRepository
+from app.repositories.team_repository import TeamRepository
+from app.repositories.tournament_repository import TournamentRepository
+
+
+def _mock_team_get(existing_ids: set[int]) -> object:
+    def side_effect(id: int) -> MagicMock | None:
+        return MagicMock() if id in existing_ids else None
+    return side_effect
 
 
 def make_mock_match(**kwargs):
@@ -45,6 +53,53 @@ class TestCreateMatch:
         assert isinstance(result, MatchRead)
         assert result.id == 1
         mock_create.assert_called_once_with(data.model_dump())
+
+    @patch.object(TournamentRepository, "get", return_value=None)
+    def test_create_tournament_not_found(self, mock_get_tournament, db_session):
+        future = datetime.now(timezone.utc) + timedelta(days=7)
+        data = MatchCreate(
+            tournament_id=999,
+            team1_id=1,
+            team2_id=2,
+            scheduled_at=future,
+            status="scheduled",
+        )
+        from app.services.match_service import create_match
+        with pytest.raises(NotFoundException) as exc:
+            create_match(db_session, data)
+        assert "999" in str(exc.value.message)
+
+    @patch.object(TeamRepository, "get")
+    def test_create_team1_not_found(self, mock_get_team, db_session):
+        mock_get_team.side_effect = _mock_team_get({2})
+        future = datetime.now(timezone.utc) + timedelta(days=7)
+        data = MatchCreate(
+            tournament_id=1,
+            team1_id=999,
+            team2_id=2,
+            scheduled_at=future,
+            status="scheduled",
+        )
+        from app.services.match_service import create_match
+        with pytest.raises(NotFoundException) as exc:
+            create_match(db_session, data)
+        assert "Team1" in str(exc.value.message)
+
+    @patch.object(TeamRepository, "get")
+    def test_create_team2_not_found(self, mock_get_team, db_session):
+        mock_get_team.side_effect = _mock_team_get({1})
+        future = datetime.now(timezone.utc) + timedelta(days=7)
+        data = MatchCreate(
+            tournament_id=1,
+            team1_id=1,
+            team2_id=999,
+            scheduled_at=future,
+            status="scheduled",
+        )
+        from app.services.match_service import create_match
+        with pytest.raises(NotFoundException) as exc:
+            create_match(db_session, data)
+        assert "Team2" in str(exc.value.message)
 
 
 class TestGetMatchById:
@@ -130,6 +185,36 @@ class TestUpdateMatch:
         with pytest.raises(NotFoundException) as exc:
             update_match(db_session, 999, MatchUpdate())
         assert "999" in str(exc.value.message)
+
+    @patch.object(MatchRepository, "get")
+    @patch.object(TournamentRepository, "get", return_value=None)
+    def test_update_tournament_not_found(self, mock_get_tournament, mock_get, db_session):
+        mock_get.return_value = make_mock_match()
+
+        from app.services.match_service import update_match
+        with pytest.raises(NotFoundException) as exc:
+            update_match(db_session, 1, MatchUpdate(tournament_id=999))
+        assert "999" in str(exc.value.message)
+
+    @patch.object(MatchRepository, "get")
+    @patch.object(TeamRepository, "get", return_value=None)
+    def test_update_team1_not_found(self, mock_get_team, mock_get, db_session):
+        mock_get.return_value = make_mock_match()
+
+        from app.services.match_service import update_match
+        with pytest.raises(NotFoundException) as exc:
+            update_match(db_session, 1, MatchUpdate(team1_id=999))
+        assert "Team1" in str(exc.value.message)
+
+    @patch.object(MatchRepository, "get")
+    @patch.object(TeamRepository, "get", return_value=None)
+    def test_update_winner_not_found(self, mock_get_team, mock_get, db_session):
+        mock_get.return_value = make_mock_match()
+
+        from app.services.match_service import update_match
+        with pytest.raises(NotFoundException) as exc:
+            update_match(db_session, 1, MatchUpdate(winner_id=999))
+        assert "Winner" in str(exc.value.message)
 
 
 class TestDeleteMatch:

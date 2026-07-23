@@ -1,6 +1,4 @@
-
-
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
 from app.schemas.pagination import PaginatedResponse
@@ -34,7 +32,10 @@ def create_tournament_endpoint(tournament: TournamentCreate, db: Session = Depen
     summary="Get a tournament by ID",
     description="Retrieve a single tournament by its unique identifier.",
 )
-def get_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
+def get_tournament_endpoint(
+    tournament_id: int = Path(..., description="The unique identifier of the tournament", examples=[1]),
+    db: Session = Depends(get_db),
+):
     return service_get_tournament(db, tournament_id)
 
 
@@ -45,10 +46,10 @@ def get_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
     description="Paginated list of all tournaments with optional sorting by name, game, location, prize_pool, start_date, end_date, or status.",
 )
 def list_tournaments_endpoint(
-    page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
-    sort_by: str | None = Query(None),
-    order: str | None = Query("asc"),
+    page: int = Query(1, ge=1, description="Page number (1-based)", examples=[1]),
+    size: int = Query(10, ge=1, le=100, description="Number of items per page (1-100)", examples=[10]),
+    sort_by: str | None = Query(None, description="Column to sort by (e.g. name, prize_pool)", examples=["name"]),
+    order: str | None = Query("asc", description="Sort order: 'asc' or 'desc'", examples=["asc"]),
     db: Session = Depends(get_db),
 ):
     return service_get_all_tournaments(db, page=page, size=size, sort_by=sort_by, order=order)
@@ -60,7 +61,11 @@ def list_tournaments_endpoint(
     summary="Update a tournament",
     description="Update one or more fields of an existing tournament.",
 )
-def update_tournament_endpoint(tournament_id: int, tournament_update: TournamentUpdate, db: Session = Depends(get_db)):
+def update_tournament_endpoint(
+    tournament_id: int = Path(..., description="The unique identifier of the tournament to update", examples=[1]),
+    tournament_update: TournamentUpdate = ...,
+    db: Session = Depends(get_db),
+):
     return service_update_tournament(db, tournament_id, tournament_update)
 
 
@@ -70,6 +75,9 @@ def update_tournament_endpoint(tournament_id: int, tournament_update: Tournament
     summary="Delete a tournament",
     description="Permanently remove a tournament and all its matches.",
 )
-def delete_tournament_endpoint(tournament_id: int, db: Session = Depends(get_db)):
+def delete_tournament_endpoint(
+    tournament_id: int = Path(..., description="The unique identifier of the tournament to delete", examples=[1]),
+    db: Session = Depends(get_db),
+):
     service_delete_tournament(db, tournament_id)
     return None

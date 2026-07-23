@@ -1,6 +1,4 @@
-
-
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
 from app.schemas.match import MatchCreate, MatchRead, MatchUpdate
@@ -35,7 +33,10 @@ def create_match_endpoint(match: MatchCreate, db: Session = Depends(get_db)):
     summary="Get a match by ID",
     description="Retrieve a single match by its unique identifier.",
 )
-def get_match_endpoint(match_id: int, db: Session = Depends(get_db)):
+def get_match_endpoint(
+    match_id: int = Path(..., description="The unique identifier of the match", examples=[1]),
+    db: Session = Depends(get_db),
+):
     return service_get_match(db, match_id)
 
 
@@ -47,10 +48,10 @@ def get_match_endpoint(match_id: int, db: Session = Depends(get_db)):
     "winner_id, scheduled_at, status, score_team1, or score_team2.",
 )
 def list_matches_endpoint(
-    page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
-    sort_by: str | None = Query(None),
-    order: str | None = Query("asc"),
+    page: int = Query(1, ge=1, description="Page number (1-based)", examples=[1]),
+    size: int = Query(10, ge=1, le=100, description="Number of items per page (1-100)", examples=[10]),
+    sort_by: str | None = Query(None, description="Column to sort by (e.g. status, scheduled_at)", examples=["scheduled_at"]),
+    order: str | None = Query("asc", description="Sort order: 'asc' or 'desc'", examples=["asc"]),
     db: Session = Depends(get_db),
 ):
     return service_get_all_matches(db, page=page, size=size, sort_by=sort_by, order=order)
@@ -62,7 +63,11 @@ def list_matches_endpoint(
     summary="Update a match",
     description="Update one or more fields of an existing match. Referenced teams and tournament are validated.",
 )
-def update_match_endpoint(match_id: int, match_update: MatchUpdate, db: Session = Depends(get_db)):
+def update_match_endpoint(
+    match_id: int = Path(..., description="The unique identifier of the match to update", examples=[1]),
+    match_update: MatchUpdate = ...,
+    db: Session = Depends(get_db),
+):
     return service_update_match(db, match_id, match_update)
 
 
@@ -72,6 +77,9 @@ def update_match_endpoint(match_id: int, match_update: MatchUpdate, db: Session 
     summary="Delete a match",
     description="Permanently remove a match from the system.",
 )
-def delete_match_endpoint(match_id: int, db: Session = Depends(get_db)):
+def delete_match_endpoint(
+    match_id: int = Path(..., description="The unique identifier of the match to delete", examples=[1]),
+    db: Session = Depends(get_db),
+):
     service_delete_match(db, match_id)
     return None
