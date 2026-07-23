@@ -1,5 +1,3 @@
-"""User domain model."""
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -12,14 +10,11 @@ from app.core.database import Base
 
 
 class UserRole(str, Enum):
-    """Enumeration of valid user roles."""
-
     USER = "USER"
     ADMIN = "ADMIN"
 
 
 class User(Base):
-    """Represents a registered user of the system."""
 
     __tablename__ = "users"
 

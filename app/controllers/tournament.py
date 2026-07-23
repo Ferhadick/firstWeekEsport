@@ -1,4 +1,4 @@
-"""Tournament controller (FastAPI router) handling HTTP requests for Tournament entity."""
+
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session

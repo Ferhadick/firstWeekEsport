@@ -1,5 +1,3 @@
-"""Application configuration helpers."""
-
 from __future__ import annotations
 
 import os
@@ -10,8 +8,22 @@ load_dotenv()
 
 
 def get_database_url() -> str:
-    """Return the database URL from the environment."""
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL environment variable is not set.")
     return database_url
+
+
+def get_jwt_secret() -> str:
+    secret = os.getenv("JWT_SECRET")
+    if not secret:
+        raise RuntimeError("JWT_SECRET environment variable is not set.")
+    return secret
+
+
+def get_jwt_algorithm() -> str:
+    return os.getenv("JWT_ALGORITHM", "HS256")
+
+
+def get_access_token_expire_minutes() -> int:
+    return int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))

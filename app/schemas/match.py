@@ -1,4 +1,4 @@
-"""DTOs (Pydantic schemas) for Match entity."""
+
 
 from __future__ import annotations
 

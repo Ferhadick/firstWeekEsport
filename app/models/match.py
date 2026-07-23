@@ -1,5 +1,3 @@
-"""Match domain model."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -12,8 +10,6 @@ from app.core.database import Base
 
 
 class MatchStatus(str, Enum):
-    """Match lifecycle status."""
-
     SCHEDULED = "scheduled"
     LIVE = "live"
     COMPLETED = "completed"
@@ -21,7 +17,6 @@ class MatchStatus(str, Enum):
 
 
 class Match(Base):
-    """Represents a match in a tournament."""
 
     __tablename__ = "matches"
 

@@ -1,4 +1,4 @@
-"""Team controller (FastAPI router) handling HTTP requests for Team entity."""
+
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session

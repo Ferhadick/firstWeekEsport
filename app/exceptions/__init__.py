@@ -1,11 +1,7 @@
-"""Custom exceptions for the application."""
-
 from __future__ import annotations
 
 
 class AppException(Exception):
-    """Base exception for all application errors."""
-
     def __init__(self, message: str, details: str | None = None) -> None:
         self.message = message
         self.details = details
@@ -13,16 +9,16 @@ class AppException(Exception):
 
 
 class NotFoundException(AppException):
-    """Raised when a requested resource is not found."""
+    pass
 
 
 class AlreadyExistsException(AppException):
-    """Raised when a resource with the given identifier already exists."""
+    pass
 
 
 class BusinessValidationException(AppException):
-    """Raised when a business rule is violated."""
+    pass
 
 
 class DatabaseException(AppException):
-    """Raised when a database error occurs."""
+    pass

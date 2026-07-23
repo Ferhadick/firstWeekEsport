@@ -1,5 +1,3 @@
-"""FastAPI application entrypoint."""
-
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
@@ -23,12 +21,13 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Include routers
+from app.controllers.auth_controller import router as auth_router
 from app.controllers.team import router as team_router
 from app.controllers.tournament import router as tournament_router
 from app.controllers.player import router as player_router
 from app.controllers.match import router as match_router
 
+app.include_router(auth_router, prefix="/auth")
 app.include_router(team_router, prefix="/teams")
 app.include_router(tournament_router, prefix="/tournaments")
 app.include_router(player_router, prefix="/players")
@@ -93,5 +92,4 @@ def general_error_handler(request: Request, exc: Exception) -> JSONResponse:
 
 @app.get("/")
 def root() -> dict[str, str]:
-    """Health-style root endpoint."""
     return {"message": "Esports Tournament API"}

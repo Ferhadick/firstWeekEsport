@@ -1,4 +1,4 @@
-"""DTOs (Pydantic schemas) for Player entity."""
+
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Team service (business logic layer)."""
+
 
 from __future__ import annotations
 

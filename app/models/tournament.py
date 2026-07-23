@@ -1,5 +1,3 @@
-"""Tournament domain model."""
-
 from __future__ import annotations
 
 from datetime import date
@@ -13,8 +11,6 @@ from app.core.database import Base
 
 
 class TournamentStatus(str, Enum):
-    """Tournament lifecycle status."""
-
     SCHEDULED = "scheduled"
     ACTIVE = "active"
     COMPLETED = "completed"
@@ -22,7 +18,6 @@ class TournamentStatus(str, Enum):
 
 
 class Tournament(Base):
-    """Represents an esports tournament."""
 
     __tablename__ = "tournaments"
 

@@ -1,5 +1,3 @@
-"""Team domain model."""
-
 from __future__ import annotations
 
 from sqlalchemy import Integer, String
@@ -9,7 +7,6 @@ from app.core.database import Base
 
 
 class Team(Base):
-    """Represents a professional esports team."""
 
     __tablename__ = "teams"
 

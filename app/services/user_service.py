@@ -1,5 +1,3 @@
-"""User service containing business logic for User entity."""
-
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -15,22 +13,6 @@ from app.schemas.user import UserCreate, UserRead
 
 
 def create_user(db: Session, user_in: UserCreate) -> UserRead:
-    """Register a new user.
-
-    Validates uniqueness of username and email, hashes the password,
-    persists the user, and returns a safe representation.
-
-    Args:
-        db: The database session.
-        user_in: The validated user creation data.
-
-    Returns:
-        A UserRead DTO (password_hash never exposed).
-
-    Raises:
-        AlreadyExistsException: If the username or email is taken.
-
-    """
     existing_username = repo_get_by_username(db, user_in.username)
     if existing_username:
         raise AlreadyExistsException(

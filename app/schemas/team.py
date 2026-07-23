@@ -1,4 +1,4 @@
-"""Data Transfer Objects (DTO) for Team model."""
+
 
 from __future__ import annotations
 

@@ -1,5 +1,3 @@
-"""Database configuration and SQLAlchemy base definition."""
-
 from __future__ import annotations
 
 from sqlalchemy import create_engine
@@ -9,7 +7,7 @@ from app.core.config import get_database_url
 
 
 class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy models."""
+    pass
 
 
 engine = create_engine(get_database_url(), pool_pre_ping=True)

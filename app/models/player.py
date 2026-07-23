@@ -1,5 +1,3 @@
-"""Player domain model."""
-
 from __future__ import annotations
 
 from sqlalchemy import ForeignKey, Integer, String
@@ -9,7 +7,6 @@ from app.core.database import Base
 
 
 class Player(Base):
-    """Represents a player on a team."""
 
     __tablename__ = "players"
 
